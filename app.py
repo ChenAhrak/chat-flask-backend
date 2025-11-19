@@ -1,6 +1,10 @@
-from flask import Flask, send_file
+from flask import Flask, request, send_file
+from datetime import datetime
 
 app = Flask(__name__)
+
+# In-memory chat storage
+chat_rooms = {}
 
 
 # get /<room>
@@ -9,10 +13,18 @@ def get_room(room):
     return send_file("Client/index.html")
 
 
-# post /api/chat/<room>
-@app.route("/api/chat/<room>", methods=["POST"])
-def post_message(room):
-    raise NotImplementedError("This endpoint is not implemented yet.")
+# /api/chat/<room>
+@app.route("/api/chat/<room>", methods=["POST", "GET"])
+def chat_rooms_endpoint(room):
+    if request.method == "POST":
+        user = request.form.get("username")
+        message = request.form.get("msg")
+        timestamp = datetime.now()
+        message_data = {"timestamp": timestamp, "user": user, "message": message}
+        chat_rooms.setdefault(room, []).append(message_data)
+        return "message received", 204
+    else:
+        raise NotImplementedError("GET method not implemented yet.")
 
 
 if __name__ == "__main__":
