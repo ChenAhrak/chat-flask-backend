@@ -1,9 +1,10 @@
 from flask import Flask, json, request, send_file
 from datetime import datetime
-
+import os
 
 app = Flask(__name__)
-
+CHAT_LOGS_DIR = "chat_logs"
+os.makedirs(CHAT_LOGS_DIR, exist_ok=True)
 
 def save_msg_to_db(room, user, message, timestamp):
     with open(f"chat_logs/{room}.txt", "a") as f:
@@ -11,7 +12,7 @@ def save_msg_to_db(room, user, message, timestamp):
             {"user": user, "message": message, "timestamp": timestamp.isoformat()}, f
         )
         f.write("\n")
-
+# get /
 @app.route("/")
 def index():
     return send_file("Client/index.html")
@@ -35,13 +36,10 @@ def chat_rooms_endpoint(room):
         try:
             with open(f"chat_logs/{room}.txt", "r") as f:
                 lines = f.readlines()
-
-            # החזרת הטקסט כמו שהפרונט־אנד מצפה
             return "".join(lines), 200
 
         except FileNotFoundError:
-            # חדר ריק – אין עדיין קובץ
-            return "", 200
+            return "", 404
 
 
 if __name__ == "__main__":
