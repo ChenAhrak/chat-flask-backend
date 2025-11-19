@@ -12,9 +12,8 @@ def save_msg_to_db(room, user, message, timestamp):
         )
         f.write("\n")
 
-# get /
 @app.route("/")
-def get():
+def index():
     return send_file("Client/index.html")
 
 # get /<room>
@@ -32,9 +31,17 @@ def chat_rooms_endpoint(room):
         timestamp = datetime.now()
         save_msg_to_db(room, user, message, timestamp)
         return "message saved", 204
-    else:
-        raise NotImplementedError("GET method not implemented yet.")
+    elif request.method == "GET":
+        try:
+            with open(f"chat_logs/{room}.txt", "r") as f:
+                lines = f.readlines()
 
+            # החזרת הטקסט כמו שהפרונט־אנד מצפה
+            return "".join(lines), 200
+
+        except FileNotFoundError:
+            # חדר ריק – אין עדיין קובץ
+            return "", 200
 
 
 if __name__ == "__main__":
