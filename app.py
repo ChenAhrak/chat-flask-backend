@@ -6,6 +6,10 @@ app = Flask(__name__)
 # In-memory chat storage
 chat_rooms = {}
 
+# get /
+@app.route("/")
+def get():
+    return send_file("Client/index.html")
 
 # get /<room>
 @app.route("/<room>")
@@ -25,6 +29,7 @@ def chat_rooms_endpoint(room):
         return "message received", 204
     else:
         raise NotImplementedError("GET method not implemented yet.")
+
 
 
 if __name__ == "__main__":
