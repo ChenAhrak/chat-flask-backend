@@ -33,3 +33,6 @@ build/
 
 # Chat room message storage 
 chat_logs/*
+
+# Docker files
+.dockerignore

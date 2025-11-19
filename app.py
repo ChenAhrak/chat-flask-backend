@@ -1,52 +1,89 @@
 from flask import Flask, request, send_file
 from datetime import datetime
+import mysql.connector
 import os
 
+# חיבור למסד נתונים (במקרה ש-Flask רץ בתוך Docker)
+def get_db():
+    return mysql.connector.connect(
+        host=os.environ.get("DB_HOST"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("DB_PASSWORD"),
+        database=os.environ.get("DB_NAME")
+    )
+
 app = Flask(__name__)
-CHAT_LOGS_DIR = "chat_logs"
-os.makedirs(CHAT_LOGS_DIR, exist_ok=True)
 
 
-# Daniel: save message to "database" (a text file in chat_logs directory)
-def save_msg_to_db(room, user, message, timestamp):
-    time_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    with open(f"chat_logs/{room}.txt", "a") as f:
-        f.write(f"[{time_str}] {user}: {message}\n")
-
-
-# Chen: get /
+# -----------------------------
+# Chen + Daniel: GET /
+# -----------------------------
 @app.route("/")
 def index():
     return send_file("Client/index.html")
 
 
-# Daniel:get /<room>
+# -----------------------------
+# Daniel: GET /<room>
+# -----------------------------
 @app.route("/<room>")
 def get_room(room):
     return send_file("Client/index.html")
 
 
-# Daniel: /api/chat/<room>
+# -----------------------------
+# API: POST / GET /api/chat/<room>
+# -----------------------------
 @app.route("/api/chat/<room>", methods=["POST", "GET"])
 def chat_rooms_endpoint(room):
+
+    # ---------- POST: Save message ----------
     if request.method == "POST":
         user = request.form.get("username", "anonymous")
         message = request.form.get("msg")
+
         if not message:
             return "message is required", 400
-        timestamp = datetime.now()
-        save_msg_to_db(room, user, message, timestamp)
-        return "message saved", 204
-    elif (  # Chen: get messages from "database" (a text file in chat_logs directory)
-        request.method == "GET"
-    ):
-        try:
-            with open(f"chat_logs/{room}.txt", "r") as f:
-                lines = f.readlines()
-            return "".join(lines), 200
 
-        except FileNotFoundError:
-            return "", 207  # No messages yet
+        db = get_db()
+        cursor = db.cursor()
+
+        cursor.execute("""
+            INSERT INTO messages (room, username, message, timestamp)
+            VALUES (%s, %s, %s, NOW())
+        """, (room, user, message))
+
+        db.commit()
+        cursor.close()
+        db.close()
+
+        return "", 204
+
+    # ---------- GET: Get messages ----------
+    elif request.method == "GET":
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT timestamp, username, message
+            FROM messages
+            WHERE room = %s
+            ORDER BY timestamp ASC
+        """, (room,))
+
+        rows = cursor.fetchall()
+        cursor.close()
+        db.close()
+
+        if not rows:
+            return "", 207
+
+        formatted_lines = [
+            f"[{row['timestamp']}] {row['username']}: {row['message']}"
+            for row in rows
+        ]
+
+        return "\n".join(formatted_lines), 200
 
 
 if __name__ == "__main__":
