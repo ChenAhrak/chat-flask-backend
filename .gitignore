@@ -1,0 +1,35 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Flask built files
+instance/
+*.db
+*.sqlite3
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor files
+.vscode/
+.idea/
+
+# Python package caches
+.eggs/
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# Chat room message storage (optional)
+chat_data/*.txt
