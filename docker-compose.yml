@@ -1,25 +1,28 @@
 version: '3.8'
+
 services:
   web:
     build: .
     container_name: chat-flask
     ports:
-      - "8000:5000"   # host:container (Flask מאזין על 5000 בתוך הקונטיינר)
+      - "8000:5000"
     depends_on:
       - db
     environment:
-      DB_HOST: db
-      DB_USER: root
-      DB_PASSWORD: root
-      DB_NAME: chatdb
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+
   db:
     image: mysql:8
     container_name: chat-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: chatdb
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
       - db_data:/var/lib/mysql
+
 volumes:
   db_data:
