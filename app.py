@@ -1,10 +1,16 @@
-from flask import Flask, request, send_file
+from flask import Flask, json, request, send_file
 from datetime import datetime
+
 
 app = Flask(__name__)
 
-# In-memory chat storage
-chat_rooms = {}
+
+def save_msg_to_db(room, user, message, timestamp):
+    with open(f"chat_logs/{room}.txt", "a") as f:
+        json.dump(
+            {"user": user, "message": message, "timestamp": timestamp.isoformat()}, f
+        )
+        f.write("\n")
 
 # get /
 @app.route("/")
@@ -24,9 +30,8 @@ def chat_rooms_endpoint(room):
         user = request.form.get("username")
         message = request.form.get("msg")
         timestamp = datetime.now()
-        message_data = {"timestamp": timestamp, "user": user, "message": message}
-        chat_rooms.setdefault(room, []).append(message_data)
-        return "message received", 204
+        save_msg_to_db(room, user, message, timestamp)
+        return "message saved", 204
     else:
         raise NotImplementedError("GET method not implemented yet.")
 

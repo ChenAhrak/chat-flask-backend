@@ -31,5 +31,5 @@ build/
 # Logs
 *.log
 
-# Chat room message storage (optional)
-chat_data/*.txt
+# Chat room message storage 
+chat_logs/*
