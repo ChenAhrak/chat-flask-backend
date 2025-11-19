@@ -1,17 +1,40 @@
 from flask import Flask, request, send_file
 from datetime import datetime
 import os
+from flask_sqlalchemy import SQLAlchemy
+
 
 app = Flask(__name__)
-CHAT_LOGS_DIR = "chat_logs"
-os.makedirs(CHAT_LOGS_DIR, exist_ok=True)
+app.secret_key = "hello"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL", "mysql+pymysql://chatuser:chatpass@db/chatdb"
+)
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
 # Daniel: save message to "database" (a text file in chat_logs directory)
 def save_msg_to_db(room, user, message, timestamp):
-    time_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    with open(f"chat_logs/{room}.txt", "a") as f:
-        f.write(f"[{time_str}] {user}: {message}\n")
+    new_msg = Message(room=room, username=user, message=message, timestamp=timestamp)
+    db.session.add(new_msg)
+    db.session.commit()
+
+
+db = SQLAlchemy(app)
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    room = db.Column(db.String(100))
+    username = db.Column(db.String(100))
+    message = db.Column(db.String(100))
+    timestamp = db.Column(db.DateTime)
+
+    def __init__(self, room, username, message, timestamp):
+        self.room = room
+        self.username = username
+        self.message = message
+        self.timestamp = timestamp
 
 
 # Chen: get /
@@ -40,14 +63,17 @@ def chat_rooms_endpoint(room):
     elif (  # Chen: get messages from "database" (a text file in chat_logs directory)
         request.method == "GET"
     ):
-        try:
-            with open(f"chat_logs/{room}.txt", "r") as f:
-                lines = f.readlines()
-            return "".join(lines), 200
-
-        except FileNotFoundError:
-            return "", 207  # No messages yet
+        messages = (
+            Message.query.filter_by(room=room).order_by(Message.timestamp.asc()).all()
+        )
+        formated_lines = [
+            f"[{m.timestamp.strftime('%Y-%m-%d %H:%M:%S')}] {m.username}: {m.message}\n"
+            for m in messages
+        ]
+        return formated_lines, 200
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(debug=True, host="0.0.0.0", port=5000)
