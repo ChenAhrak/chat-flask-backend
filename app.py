@@ -1,4 +1,4 @@
-from flask import Flask, json, request, send_file
+from flask import Flask, request, send_file
 from datetime import datetime
 import os
 
@@ -9,11 +9,9 @@ os.makedirs(CHAT_LOGS_DIR, exist_ok=True)
 
 # Daniel: save message to "database" (a text file in chat_logs directory)
 def save_msg_to_db(room, user, message, timestamp):
+    time_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
     with open(f"chat_logs/{room}.txt", "a") as f:
-        json.dump(
-            {"user": user, "message": message, "timestamp": timestamp.isoformat()}, f
-        )
-        f.write("\n")
+        f.write(f"[{time_str}] {user}: {message}\n")
 
 
 # Chen: get /
@@ -39,9 +37,9 @@ def chat_rooms_endpoint(room):
         timestamp = datetime.now()
         save_msg_to_db(room, user, message, timestamp)
         return "message saved", 204
-    elif (
+    elif (  # Chen: get messages from "database" (a text file in chat_logs directory)
         request.method == "GET"
-    ):  # Chen: get messages from "database" (a text file in chat_logs directory)
+    ):
         try:
             with open(f"chat_logs/{room}.txt", "r") as f:
                 lines = f.readlines()
